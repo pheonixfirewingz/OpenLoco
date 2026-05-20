@@ -10,6 +10,12 @@ set(private_files
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform.Windows.cpp"
 )
 
+# Emscripten-specific source file
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    list(APPEND private_files 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform.Emscripten.cpp")
+endif()
+
 if (APPLE)
     list(APPEND private_files 
         "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform.Macos.mm")

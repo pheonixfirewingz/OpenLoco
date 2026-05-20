@@ -9,7 +9,6 @@ set(private_files
 set(public_link_libraries
     Core
     Diagnostics
-    PNG::PNG
 )
 
 loco_add_library(Gfx STATIC
@@ -20,3 +19,6 @@ loco_add_library(Gfx STATIC
     PUBLIC_LINK_LIBRARIES
         ${public_link_libraries}
 )
+
+# Add thirdparty include directory for stb_image.h
+target_include_directories(Gfx PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty")

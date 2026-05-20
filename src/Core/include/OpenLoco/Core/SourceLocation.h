@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <fmt/format.h>
 #include <string>
 #include <string_view>

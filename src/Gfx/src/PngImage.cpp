@@ -2,8 +2,8 @@
 
 #include <OpenLoco/Diagnostics/Logging.h>
 #include <cassert>
-#include <fstream>
-#include <png.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 using namespace OpenLoco::Diagnostics;
 
@@ -18,7 +18,7 @@ namespace OpenLoco::Gfx
         assert(h > 0);
         assert(c > 0);
 
-        imageData = std::vector<png_byte>(w * h * c);
+        imageData = std::vector<unsigned char>(w * h * c);
     }
 
     Colour32 PngImage::getPixel(int x, int y)
@@ -34,106 +34,30 @@ namespace OpenLoco::Gfx
         };
     }
 
-    static void libpngErrorHandler(png_structp, png_const_charp error_msg)
-    {
-        throw std::runtime_error(error_msg);
-    }
-
-    static void libpngWarningHandler(png_structp, png_const_charp error_msg)
-    {
-        Logging::warn("{}", error_msg);
-    }
-
     std::unique_ptr<PngImage> PngImage::loadFromFile(const std::filesystem::path& filePath)
     {
-        std::ifstream inFile(filePath, std::ios::binary);
+        int w, h, channels;
 
-        png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, libpngErrorHandler, libpngWarningHandler);
-        if (!png)
+        // Load image using stb_image (always request 4 channels for RGBA)
+        unsigned char* data = stbi_load(filePath.string().c_str(), &w, &h, &channels, 4);
+
+        if (!data)
         {
-            Logging::error("Failed to create PNG read struct");
+            Logging::error("Failed to load PNG file: {}", filePath.string());
             return nullptr;
         }
 
-        png_infop info = png_create_info_struct(png);
-        if (!info)
-        {
-            Logging::error("Failed to create PNG info struct");
-            png_destroy_read_struct(&png, nullptr, nullptr);
-            return nullptr;
-        }
+        // Ensure we have 4 channels (RGBA)
+        channels = 4;
 
-        try
-        {
-            png_set_read_fn(png, static_cast<void*>(&inFile), [](png_structp png_ptr, png_bytep data, png_size_t length) {
-                std::istream* inStream = static_cast<std::istream*>(png_get_io_ptr(png_ptr));
-                inStream->read(reinterpret_cast<char*>(data), length);
-            });
+        auto pngImage = std::make_unique<PngImage>(w, h, channels);
 
-            png_read_info(png, info);
+        // Copy data to the image
+        std::memcpy(pngImage->imageData.data(), data, w * h * channels);
 
-            // Apply transformations to normalize to RGBA format
-            png_byte colorType = png_get_color_type(png, info);
-            png_byte bitDepth = png_get_bit_depth(png, info);
+        // Free stb_image data
+        stbi_image_free(data);
 
-            // Convert palette to RGB
-            if (colorType == PNG_COLOR_TYPE_PALETTE)
-            {
-                png_set_palette_to_rgb(png);
-            }
-
-            // Convert grayscale to RGB if less than 8 bits
-            if (colorType == PNG_COLOR_TYPE_GRAY && bitDepth < 8)
-            {
-                png_set_expand_gray_1_2_4_to_8(png);
-            }
-
-            // Add alpha channel if not present
-            if (colorType == PNG_COLOR_TYPE_RGB || colorType == PNG_COLOR_TYPE_GRAY || colorType == PNG_COLOR_TYPE_PALETTE)
-            {
-                png_set_add_alpha(png, 0xFF, PNG_FILLER_AFTER);
-            }
-
-            // Convert 16-bit to 8-bit
-            if (bitDepth == 16)
-            {
-                png_set_strip_16(png);
-            }
-
-            // Convert grayscale to RGB
-            if (colorType == PNG_COLOR_TYPE_GRAY || colorType == PNG_COLOR_TYPE_GRAY_ALPHA)
-            {
-                png_set_gray_to_rgb(png);
-            }
-
-            // Update info after transformations
-            png_read_update_info(png, info);
-
-            int width = png_get_image_width(png, info);
-            int height = png_get_image_height(png, info);
-            int channels = png_get_channels(png, info);
-
-            auto pngImage = std::make_unique<PngImage>(width, height, channels);
-
-            png_bytep* rowPointers = new png_bytep[height];
-            for (int y = 0; y < height; y++)
-            {
-                rowPointers[y] = &pngImage->imageData[y * width * channels];
-            }
-            png_read_image(png, rowPointers);
-
-            // cleanup image
-            delete[] rowPointers;
-            png_destroy_read_struct(&png, &info, nullptr);
-            inFile.close();
-
-            return pngImage;
-        }
-        catch (const std::runtime_error& e)
-        {
-            Logging::error("{}", e.what());
-            png_destroy_read_struct(&png, nullptr, nullptr);
-            return nullptr;
-        }
+        return pngImage;
     }
 }

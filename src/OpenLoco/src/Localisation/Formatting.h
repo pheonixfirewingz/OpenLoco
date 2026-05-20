@@ -4,6 +4,7 @@
 #include "StringManager.h"
 #include "Types.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <cstdint>
 #include <string_view>
 #include <utility>

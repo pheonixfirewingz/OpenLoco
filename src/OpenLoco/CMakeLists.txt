@@ -732,8 +732,7 @@ set(private_link_libraries
     SDL3::SDL3
     Threads::Threads
     yaml-cpp::yaml-cpp
-    ZLIB::ZLIB # This shouldn't be required but vcpkg seems to not map the dependencies correctly for png static
-    PNG::PNG
+    fmt::fmt
     $<$<PLATFORM_ID:Windows>:winmm>
     $<$<PLATFORM_ID:Windows>:ws2_32>
     $<$<PLATFORM_ID:Windows>:Resources>
@@ -752,9 +751,16 @@ set(msvc_private_compile_definitions
     _WINSOCK_DEPRECATED_NO_WARNINGS
 )
 
+# Emscripten-specific compile definitions
+set(emscripten_private_compile_definitions
+    OPENLOCO_WEB
+    SDL_MAIN_HANDLED
+)
+
 set(private_compile_definitions
     SDL_MAIN_HANDLED
     $<$<CXX_COMPILER_ID:MSVC>:${msvc_private_compile_definitions}>
+    $<$<STREQUAL:${CMAKE_SYSTEM_NAME},Emscripten>:${emscripten_private_compile_definitions}>
 )
 
 loco_add_executable(OpenLoco 
@@ -835,3 +841,20 @@ if (APPLE)
         PROPERTY MACOSX_PACKAGE_LOCATION "Resources/objects"
     )
 endif ()
+
+# Copy web files for Emscripten builds
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(WEB_SOURCE_DIR "${CMAKE_SOURCE_DIR}/distribution/web")
+    if(EXISTS "${WEB_SOURCE_DIR}/index.html")
+        add_custom_command(
+            TARGET OpenLoco POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${WEB_SOURCE_DIR}/index.html"
+                "$<TARGET_FILE_DIR:OpenLoco>/index.html"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${WEB_SOURCE_DIR}/favicon.ico"
+                "$<TARGET_FILE_DIR:OpenLoco>/favicon.ico"
+            COMMENT "Copying web files (index.html, favicon.ico) to build directory"
+        )
+    endif()
+endif()

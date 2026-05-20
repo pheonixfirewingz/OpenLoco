@@ -1,4 +1,4 @@
-#if !defined(_WIN32) && !(defined(__APPLE__) && defined(__MACH__))
+#if !defined(_WIN32) && !(defined(__APPLE__) && defined(__MACH__)) && !defined(__EMSCRIPTEN__)
 
 #include "Platform.h"
 #include <cstdlib>

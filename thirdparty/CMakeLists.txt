@@ -32,20 +32,109 @@ if (${OPENLOCO_BUILD_TESTS})
     find_package(GTest REQUIRED)
 endif()
 
-find_package(SDL3 REQUIRED CONFIG)
-
-find_package(PNG REQUIRED)
-find_package(ZLIB REQUIRED) # Dependency of PNG not really required but vcpkg not mapping static png dependencies
-if (NOT APPLE AND NOT MSVC)
-    find_package(OpenAL CONFIG)
-    if (OpenAL_FOUND)
-        set(OPENAL_LIBRARIES OpenAL::OpenAL)
-    else()
-        pkg_check_modules(OPENAL REQUIRED openal)
+# Emscripten-specific dependency handling
+# Use CMAKE_SYSTEM_NAME to detect Emscripten as it's set in the toolchain file
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    # For Emscripten builds, use Emscripten ports for SDL3 and libraries
+    # The actual linking is done via -sUSE_SDL=3, etc. in the toolchain
+    # We create imported targets with the proper link options
+    
+    # SDL3 - Emscripten port provides SDL3
+    if(NOT TARGET SDL3::SDL3)
+        add_library(SDL3::SDL3 INTERFACE IMPORTED)
+        # The -sUSE_SDL=3 flag is in the toolchain linker flags
+        
+        # Add SDL3 include path - try multiple sources
+        if(EMSCRIPTEN_SDL3_INCLUDE_DIR AND EXISTS "${EMSCRIPTEN_SDL3_INCLUDE_DIR}/SDL3/SDL.h")
+            target_include_directories(SDL3::SDL3 INTERFACE "${EMSCRIPTEN_SDL3_INCLUDE_DIR}")
+            message(STATUS "Using SDL3 include dir from toolchain: ${EMSCRIPTEN_SDL3_INCLUDE_DIR}")
+        elseif(DEFINED ENV{EMSDK})
+            # Fallback: try to find SDL3 headers directly from Emscripten SDK
+            set(EMSDK_ROOT "$ENV{EMSDK}/upstream/emscripten")
+            set(SDL3_SEARCH_PATHS
+                "${EMSDK_ROOT}/cache/sysroot/include"
+                "${EMSDK_ROOT}/system/include"
+                "${EMSDK_ROOT}/include"
+            )
+            set(SDL3_FOUND FALSE)
+            foreach(SDL3_PATH ${SDL3_SEARCH_PATHS})
+                if(EXISTS "${SDL3_PATH}/SDL3/SDL.h")
+                    target_include_directories(SDL3::SDL3 INTERFACE "${SDL3_PATH}")
+                    message(STATUS "Using SDL3 include dir (fallback): ${SDL3_PATH}")
+                    set(SDL3_FOUND TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(NOT SDL3_FOUND)
+                message(WARNING "SDL3 headers not found! Build may fail. Ensure SDL3 port is installed.")
+            endif()
+        endif()
     endif()
-else()
-    find_package(OpenAL CONFIG REQUIRED)
+    
+    # OpenAL - Emscripten port provides OpenAL Soft
+    if(NOT TARGET OpenAL::OpenAL)
+        add_library(OpenAL::OpenAL INTERFACE IMPORTED)
+        
+        # Add OpenAL include path - try multiple sources
+        if(EMSCRIPTEN_OPENAL_INCLUDE_DIR AND EXISTS "${EMSCRIPTEN_OPENAL_INCLUDE_DIR}/AL/al.h")
+            target_include_directories(OpenAL::OpenAL INTERFACE "${EMSCRIPTEN_OPENAL_INCLUDE_DIR}")
+            message(STATUS "Using OpenAL include dir from toolchain: ${EMSCRIPTEN_OPENAL_INCLUDE_DIR}")
+        elseif(DEFINED ENV{EMSDK})
+            # Fallback: try to find OpenAL headers directly from Emscripten SDK
+            set(EMSDK_ROOT "$ENV{EMSDK}/upstream/emscripten")
+            set(OPENAL_SEARCH_PATHS
+                "${EMSDK_ROOT}/cache/sysroot/include"
+                "${EMSDK_ROOT}/system/include"
+                "${EMSDK_ROOT}/include"
+            )
+            set(OPENAL_FOUND FALSE)
+            foreach(OPENAL_PATH ${OPENAL_SEARCH_PATHS})
+                if(EXISTS "${OPENAL_PATH}/AL/al.h")
+                    target_include_directories(OpenAL::OpenAL INTERFACE "${OPENAL_PATH}")
+                    message(STATUS "Using OpenAL include dir (fallback): ${OPENAL_PATH}")
+                    set(OPENAL_FOUND TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(NOT OPENAL_FOUND)
+                message(WARNING "OpenAL headers not found! Build may fail. Ensure OpenAL port is installed.")
+            endif()
+        endif()
+    endif()
+    
+    # fmt - For Emscripten, use header-only mode
+    # Fetch fmt headers but don't build the library, use FMT_HEADER_ONLY
+    if(NOT TARGET fmt::fmt)
+        FetchContent_Declare(	
+            fmt	
+            GIT_REPOSITORY      https://github.com/fmtlib/fmt	
+            GIT_TAG             11.1.4	
+            GIT_SHALLOW         ON	
+        )	
+        FetchContent_Populate(fmt)
+        
+        add_library(fmt::fmt INTERFACE IMPORTED)
+        target_compile_definitions(fmt::fmt INTERFACE FMT_HEADER_ONLY)
+        target_include_directories(fmt::fmt INTERFACE ${fmt_SOURCE_DIR}/include)
+    endif()
+    
     set(OPENAL_LIBRARIES OpenAL::OpenAL)
+else()
+    # Native platform dependency handling
+    find_package(SDL3 REQUIRED CONFIG)
+
+    # Note: PNG and ZLIB are no longer required as we use stb_image.h for image loading
+    if (NOT APPLE AND NOT MSVC)
+        find_package(OpenAL CONFIG)
+        if (OpenAL_FOUND)
+            set(OPENAL_LIBRARIES OpenAL::OpenAL)
+        else()
+            pkg_check_modules(OPENAL REQUIRED openal)
+        endif()
+    else()
+        find_package(OpenAL CONFIG REQUIRED)
+        set(OPENAL_LIBRARIES OpenAL::OpenAL)
+    endif()
 endif()
 
 # breakpad is also required
@@ -54,19 +143,24 @@ if (MSVC)
     set(BREAKPAD_LIBRARIES unofficial::breakpad::libbreakpad unofficial::breakpad::libbreakpad_client)
 endif()
 
-find_package(fmt QUIET)
-if ( NOT fmt_FOUND )	
-    ## fmt	
-    FetchContent_Declare(	
-        fmt	
-        GIT_REPOSITORY      https://github.com/fmtlib/fmt	
-        GIT_TAG             11.1.4	
-        GIT_SHALLOW         ON	
-    )	
-    FetchContent_MakeAvailable(fmt)	
+# fmt library is required for formatting operations
+# For Emscripten builds, we use the interface target created above
+# For native builds, we find or fetch fmt
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    find_package(fmt QUIET)
+    if ( NOT fmt_FOUND )	
+        ## fmt	
+        FetchContent_Declare(	
+            fmt	
+            GIT_REPOSITORY      https://github.com/fmtlib/fmt	
+            GIT_TAG             11.1.4	
+            GIT_SHALLOW         ON	
+        )	
+        FetchContent_MakeAvailable(fmt)	
 
-    # Group all the ThirdParty items under a ThirdParty folder in IDEs	
-    set_target_properties(fmt PROPERTIES FOLDER "ThirdParty")	
+        # Group all the ThirdParty items under a ThirdParty folder in IDEs	
+        set_target_properties(fmt PROPERTIES FOLDER "ThirdParty")	
+    endif()
 endif()
 
 find_package(sfl QUIET)

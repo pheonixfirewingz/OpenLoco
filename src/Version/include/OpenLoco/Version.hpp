@@ -6,7 +6,11 @@
 
 #define OPENLOCO_NAME "OpenLoco"
 
-#if defined(__amd64__) || defined(_M_AMD64)
+#if defined(__wasm64__)
+    #define OPENLOCO_ARCHITECTURE "wasm64"
+#elif defined(__wasm__)
+    #define OPENLOCO_ARCHITECTURE "wasm"
+#elif defined(__amd64__) || defined(_M_AMD64)
     #define OPENLOCO_ARCHITECTURE "x86-64"
 #elif defined(__i386__) || defined(_M_IX86)
     #define OPENLOCO_ARCHITECTURE "x86"
@@ -15,7 +19,7 @@
 #elif defined(__arm__) || defined(_M_ARM)
     #if defined(__ARM_ARCH_7A__)
         #define OPENLOCO_ARCHITECTURE "arm-v7a"
-    #else
+    else
         #define OPENLOCO_ARCHITECTURE "arm"
     #endif
 #else
@@ -34,6 +38,8 @@
     #define OPENLOCO_PLATFORM "NetBSD"
 #elif defined(__OpenBSD__)
     #define OPENLOCO_PLATFORM "OpenBSD"
+#elif defined(__EMSCRIPTEN__)
+    #define OPENLOCO_PLATFORM "Emscripten"
 #else
     #error "OPENLOCO_PLATFORM is undefined. Please add identification."
 #endif

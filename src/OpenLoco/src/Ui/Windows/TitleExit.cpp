@@ -25,7 +25,7 @@ namespace OpenLoco::Ui::Windows::TitleExit
         };
     }
 
-    static constexpr auto _widgets = makeWidgets(
+    [[maybe_unused]] static constexpr auto _widgets = makeWidgets(
         Widgets::ImageButton({ 0, 0 }, kWindowSize, WindowColour::secondary, Widget::kContentNull, StringIds::title_menu_exit_from_game)
 
     );
@@ -34,6 +34,7 @@ namespace OpenLoco::Ui::Windows::TitleExit
 
     Window* open()
     {
+#ifndef __EMSCRIPTEN__
         auto window = OpenLoco::Ui::WindowManager::createWindow(
             WindowType::titleExit,
             { Ui::width() - kWindowSize.width, Ui::height() - kWindowSize.height },
@@ -48,6 +49,9 @@ namespace OpenLoco::Ui::Windows::TitleExit
         window->setColour(WindowColour::secondary, AdvancedColour(Colour::mutedSeaGreen).translucent());
 
         return window;
+#else
+        return nullptr;
+#endif
     }
 
     static void prepareDraw(Ui::Window& self)
@@ -99,7 +103,7 @@ namespace OpenLoco::Ui::Windows::TitleExit
         .draw = draw,
     };
 
-    static const WindowEventList& getEvents()
+    [[maybe_unused]] static const WindowEventList& getEvents()
     {
         return kEvents;
     }

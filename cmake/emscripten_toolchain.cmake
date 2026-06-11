@@ -143,6 +143,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Emscripten-specific compile flags
 set(EMSCRIPTEN_COMPILE_FLAGS
     "-fstrict-aliasing"
+    "-fexceptions"
 )
 
 # Emscripten-specific compile definitions for platform identification
@@ -167,7 +168,7 @@ set(EMSCRIPTEN_LINK_FLAGS
     "-sINITIAL_MEMORY=67108864"       # 64MB initial memory
     "-sSTACK_SIZE=5242880"            # 5MB stack size
     "-sALLOW_TABLE_GROWTH=1"          # Allow table growth for indirect calls
-    "-sDISABLE_EXCEPTION_CATCHING=0"  # Enable exception catching
+    "-fexceptions"                    # Enable exception catching
     "-sSAFE_HEAP=0"                   # Disable safe heap for performance (enable for debugging)
     "-sEXPORTED_RUNTIME_METHODS=['cwrap','ccall']" # Export runtime methods
     "-sALLOW_UNIMPLEMENTED_SYSCALLS=1" # Allow unimplemented syscalls (some may be needed)

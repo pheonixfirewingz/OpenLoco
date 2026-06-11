@@ -295,6 +295,11 @@ namespace OpenLoco::Gfx
 
     void SoftwareDrawingEngine::present()
     {
+        if (_screenSurface == nullptr) {
+            Logging::error("SoftwareDrawingEngine::present() _screenSurface is nullptr!");
+            return;
+        }
+
         // Lock the surface before setting its pixels
         if (SDL_MUSTLOCK(_screenSurface))
         {

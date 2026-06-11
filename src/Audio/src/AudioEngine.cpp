@@ -1,8 +1,35 @@
 #define AL_ALEXT_PROTOTYPES
 #include <AL/al.h>
 #include <AL/alc.h>
-#include <AL/alext.h>
+#ifndef __EMSCRIPTEN__
 #include <AL/efx.h>
+#include <AL/alext.h>
+#else
+#define AL_AUXILIARY_SEND_FILTER 0x2006
+#define AL_EFFECTSLOT_NULL 0x0000
+#define AL_FILTER_NULL 0x0000
+#define AL_EFFECT_TYPE 0x8001
+#define AL_EFFECT_REVERB 0x0001
+#define AL_EFFECTSLOT_EFFECT 0x0001
+#define AL_REVERB_DENSITY 0x0001
+#define AL_REVERB_DIFFUSION 0x0002
+#define AL_REVERB_GAIN 0x0003
+#define AL_REVERB_GAINHF 0x0004
+#define AL_REVERB_DECAY_TIME 0x0005
+#define AL_REVERB_DECAY_HFRATIO 0x0006
+#define AL_REVERB_REFLECTIONS_GAIN 0x0007
+#define AL_REVERB_REFLECTIONS_DELAY 0x0008
+#define AL_REVERB_LATE_REVERB_GAIN 0x0009
+#define AL_REVERB_LATE_REVERB_DELAY 0x000A
+inline void alGenEffects(ALsizei, ALuint*) {}
+inline void alDeleteEffects(ALsizei, const ALuint*) {}
+inline void alEffecti(ALuint, ALenum, ALint) {}
+inline void alEffectf(ALuint, ALenum, ALfloat) {}
+inline void alGenAuxiliaryEffectSlots(ALsizei, ALuint*) {}
+inline void alDeleteAuxiliaryEffectSlots(ALsizei, const ALuint*) {}
+inline void alAuxiliaryEffectSloti(ALuint, ALenum, ALint) {}
+inline void alSource3i(ALuint, ALenum, ALint, ALint, ALint) {}
+#endif
 #include <OpenLoco/Audio/AudioEngine.h>
 #include <OpenLoco/Diagnostics/Logging.h>
 #include <algorithm>
@@ -75,7 +102,11 @@ namespace OpenLoco::Audio
 
     static void applyVolume(AudioInstance& inst)
     {
-        alSourcef(inst.sourceId, AL_GAIN, computeEffectiveGain(inst.attribs.volume, inst.channel));
+        float gain = computeEffectiveGain(inst.attribs.volume, inst.channel);
+#ifdef __EMSCRIPTEN__
+        gain *= 0.3f; // Prevent WebAudio clipping
+#endif
+        alSourcef(inst.sourceId, AL_GAIN, gain);
     }
 
     static void applyPitch(AudioInstance& inst)
@@ -86,7 +117,11 @@ namespace OpenLoco::Audio
         }
         else
         {
-            alSourcef(inst.sourceId, AL_PITCH, freqToPitch(inst.attribs.frequency));
+            float pitch = freqToPitch(inst.attribs.frequency);
+#ifdef __EMSCRIPTEN__
+            pitch = 1.0f; // Bypassing pitch shift prevents harsh resampling in WebAudio
+#endif
+            alSourcef(inst.sourceId, AL_PITCH, pitch);
         }
     }
 
@@ -109,11 +144,14 @@ namespace OpenLoco::Audio
             return false;
         }
 
+#ifndef __EMSCRIPTEN__
         constexpr ALCint attrs[] = {
             ALC_HRTF_SOFT, ALC_FALSE, 0
         };
-
         _alcContext = alcCreateContext(_alcDevice, attrs);
+#else
+        _alcContext = alcCreateContext(_alcDevice, nullptr);
+#endif
         if (_alcContext == nullptr)
         {
             Logging::error("Failed to create OpenAL context");
@@ -137,7 +175,7 @@ namespace OpenLoco::Audio
         // Need to disable this for debug builds, there is a bug in OpenAL that triggers an iterator check, but no release has been made yet.
         // https://github.com/kcat/openal-soft/issues/1238
         // It is functional for release builds so we just skip it for debug. Once a fixed version of OpenAL is released we can remove this workaround.
-#ifdef NDEBUG
+#if defined(NDEBUG) && !defined(__EMSCRIPTEN__)
         _reverbAvailable = alcIsExtensionPresent(_alcDevice, "ALC_EXT_EFX") == ALC_TRUE;
 #else
         _reverbAvailable = false;

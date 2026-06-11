@@ -125,8 +125,13 @@ namespace OpenLoco::Config
         int32_t mainVolume = -1100;
         int32_t masterVolume = 100;
         int32_t musicVolume = 100;
+#ifdef __EMSCRIPTEN__
+        int32_t effectsVolume = 0;
+        int32_t vehiclesVolume = 0;
+#else
         int32_t effectsVolume = 100;
         int32_t vehiclesVolume = 100;
+#endif
         int32_t uiVolume = 100;
         int32_t ambientVolume = 100;
         bool playJukeboxMusic = true;

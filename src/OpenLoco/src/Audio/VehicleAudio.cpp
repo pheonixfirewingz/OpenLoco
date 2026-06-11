@@ -160,7 +160,7 @@ namespace OpenLoco::Audio
         sound.activeSoundId = SoundObjectId::null;
     }
 
-    static void updateSingleVehicleSound(Vehicles::VehicleBase& base, Vehicles::VehicleSound& sound, EntityId headId)
+    [[maybe_unused]] static void updateSingleVehicleSound(Vehicles::VehicleBase& base, Vehicles::VehicleSound& sound, EntityId headId)
     {
         if (sound.drivingSoundId == SoundObjectId::null)
         {
@@ -212,6 +212,7 @@ namespace OpenLoco::Audio
 
     void updateVehicleNoise()
     {
+#ifndef __EMSCRIPTEN__
         if (!Game::hasFlags(GameStateFlags::tileManagerLoaded))
         {
             return;
@@ -232,6 +233,7 @@ namespace OpenLoco::Audio
             updateSingleVehicleSound(*train.veh2, train.veh2->sound, headId);
             updateSingleVehicleSound(*train.tail, train.tail->sound, headId);
         }
+#endif
     }
 
     void stopVehicleNoise()

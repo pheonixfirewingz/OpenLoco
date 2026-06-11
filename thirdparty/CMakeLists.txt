@@ -123,7 +123,8 @@ else()
     # Native platform dependency handling
     find_package(SDL3 REQUIRED CONFIG)
 
-    # Note: PNG and ZLIB are no longer required as we use stb_image.h for image loading
+    find_package(PNG REQUIRED)
+    set(PNG_LIBRARIES PNG::PNG)
     if (NOT APPLE AND NOT MSVC)
         find_package(OpenAL CONFIG)
         if (OpenAL_FOUND)
@@ -137,11 +138,11 @@ else()
     endif()
 endif()
 
-# breakpad is also required
-if (MSVC)
-    find_package(unofficial-breakpad CONFIG REQUIRED)
-    set(BREAKPAD_LIBRARIES unofficial::breakpad::libbreakpad unofficial::breakpad::libbreakpad_client)
-endif()
+# breakpad is disabled for now
+# if (MSVC)
+#     find_package(unofficial-breakpad CONFIG REQUIRED)
+#     set(BREAKPAD_LIBRARIES unofficial::breakpad::libbreakpad unofficial::breakpad::libbreakpad_client)
+# endif()
 
 # fmt library is required for formatting operations
 # For Emscripten builds, we use the interface target created above

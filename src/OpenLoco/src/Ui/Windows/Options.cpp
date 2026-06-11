@@ -1065,6 +1065,13 @@ namespace OpenLoco::Ui::Windows::Options
 
             Common::prepareDraw(self);
 
+#ifdef __EMSCRIPTEN__
+            self.widgets[Widx::volume_effects_label].type = WidgetType::empty;
+            self.widgets[Widx::volume_effects].type = WidgetType::empty;
+            self.widgets[Widx::volume_vehicles_label].type = WidgetType::empty;
+            self.widgets[Widx::volume_vehicles].type = WidgetType::empty;
+#endif
+
             // Audio device
             {
                 auto args = FormatArguments(self.widgets[Widx::audio_device].textArgs);
@@ -1104,8 +1111,10 @@ namespace OpenLoco::Ui::Windows::Options
 
             drawVolumeSlider(self, drawingCtx, Widx::volume_master, Audio::getChannelVolume(Audio::ChannelId::master));
             drawVolumeSlider(self, drawingCtx, Widx::volume_music, Audio::getChannelVolume(Audio::ChannelId::music));
+#ifndef __EMSCRIPTEN__
             drawVolumeSlider(self, drawingCtx, Widx::volume_effects, Audio::getChannelVolume(Audio::ChannelId::effects));
             drawVolumeSlider(self, drawingCtx, Widx::volume_vehicles, Audio::getChannelVolume(Audio::ChannelId::vehicles));
+#endif
             drawVolumeSlider(self, drawingCtx, Widx::volume_ui, Audio::getChannelVolume(Audio::ChannelId::ui));
             drawVolumeSlider(self, drawingCtx, Widx::volume_ambient, Audio::getChannelVolume(Audio::ChannelId::ambient));
         }

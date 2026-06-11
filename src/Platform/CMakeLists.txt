@@ -41,8 +41,8 @@ loco_add_library(Platform STATIC
         ${public_link_libraries}
 )
 
-if (MSVC)
-    target_compile_definitions(Platform
-        PRIVATE
-            USE_BREAKPAD)
-endif()
+# if (MSVC)
+#     target_compile_definitions(Platform
+#         PRIVATE
+#             USE_BREAKPAD)
+# endif()

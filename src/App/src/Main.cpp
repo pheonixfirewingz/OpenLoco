@@ -38,6 +38,8 @@ namespace OpenLoco
         std::cout << "                uncompress [options] <path>" << std::endl;
         std::cout << "                simulate [options] <path> <ticks> [path]" << std::endl;
         std::cout << "                compare [options] <path1> <path2>" << std::endl;
+        std::cout << "                benchmark [options] <case.json> -o <result.json>" << std::endl;
+        std::cout << "                benchmark-self-test" << std::endl;
         std::cout << std::endl;
         std::cout << "options:" << std::endl;
         std::cout << "--bind                     Address to bind to when hosting a server" << std::endl;
@@ -273,6 +275,15 @@ namespace OpenLoco
                 return simulate(options);
             case CommandLineAction::compare:
                 return compare(options);
+            case CommandLineAction::benchmark:
+                if (options.path.empty() || options.outputPath.empty())
+                {
+                    Logging::error("benchmark requires <case.json> and -o <result.json>");
+                    return EXIT_FAILURE;
+                }
+                return runBenchmarkCase(options.path, options.outputPath);
+            case CommandLineAction::benchmarkSelfTest:
+                return runBenchmarkSelfTests();
             default:
                 return std::nullopt;
         }

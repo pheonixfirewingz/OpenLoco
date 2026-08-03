@@ -367,6 +367,15 @@ namespace OpenLoco
                     options.path2 = parser.getArg(2);
                 }
             }
+            else if (firstArg == "benchmark")
+            {
+                options.action = CommandLineAction::benchmark;
+                options.path = parser.getArg(1);
+            }
+            else if (firstArg == "benchmark-self-test")
+            {
+                options.action = CommandLineAction::benchmarkSelfTest;
+            }
             else
             {
                 options.path = parser.getArg(0);

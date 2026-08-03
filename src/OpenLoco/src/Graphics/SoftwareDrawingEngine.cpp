@@ -1,4 +1,5 @@
 #include "Graphics/SoftwareDrawingEngine.h"
+#include "Benchmark/Benchmark.h"
 #include "Config.h"
 #include "Graphics/FPSCounter.h"
 #include "Graphics/RenderTarget.h"
@@ -251,18 +252,18 @@ namespace OpenLoco::Gfx
     {
         // Need to first render the current dirty regions before updating the viewports.
         // This is needed to ensure it will copy the correct pixels when the viewport will be moved.
-        renderDirtyRegions();
+        Benchmark::measureRender(Benchmark::RenderComponent::dirtyRegions, [this] { renderDirtyRegions(); });
 
         // Updating the viewports will potentially move pixels and mark previously invisible regions as dirty.
-        WindowManager::updateViewports();
+        Benchmark::measureRender(Benchmark::RenderComponent::viewportUpdates, [] { WindowManager::updateViewports(); });
 
         // Render the uncovered regions.
-        renderDirtyRegions();
+        Benchmark::measureRender(Benchmark::RenderComponent::dirtyRegions, [this] { renderDirtyRegions(); });
 
         // Draw FPS counter.
         if (Config::get().showFPS)
         {
-            Gfx::drawFPS(_ctx);
+            Benchmark::measureRender(Benchmark::RenderComponent::overlay, [this] { Gfx::drawFPS(_ctx); });
         }
     }
 

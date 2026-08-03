@@ -1,5 +1,7 @@
+#include "Benchmark/Benchmark.h"
 #include "Scenario/Scenario.h"
 #include <algorithm>
+#include "S5/S5.h"
 #include <cassert>
 #include <chrono>
 #include <cstring>
@@ -457,4 +459,33 @@ namespace OpenLoco
         }
     }
 
+    int runBenchmarkCase(const std::string& casePath, const std::string& outputPath)
+    {
+        return Benchmark::runCaseFile(casePath, outputPath);
+    }
+
+    int runBenchmarkSelfTests()
+    {
+        return Benchmark::runSelfTests();
+    }
+
+    void benchmarkLoadGame(const fs::path& savePath)
+    {
+        static bool initialised = Ui::isInitialized();
+        if (!initialised)
+        {
+            simulateGame(savePath, 0);
+            initialised = true;
+        }
+        else if (!S5::importSaveToGameState(savePath, S5::LoadFlags::none))
+        {
+            throw std::runtime_error("Unable to reload benchmark save");
+        }
+    }
+
+    void benchmarkTickLogic(const int32_t ticks)
+    {
+        for (int32_t i = 0; i < ticks; ++i)
+            Scenes::GameScene::tick();
+    }
 }

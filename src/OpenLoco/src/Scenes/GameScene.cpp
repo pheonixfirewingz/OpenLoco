@@ -1,5 +1,6 @@
 #include "Scenes/GameScene.h"
 #include "Audio/Audio.h"
+#include "Benchmark/Benchmark.h"
 #include "Config.h"
 #include "Date.h"
 #include "Economy/Economy.h"
@@ -211,14 +212,17 @@ namespace OpenLoco::Scenes::GameScene
     // 0x0046ABCB
     void tick()
     {
-        if (!Network::shouldProcessTick(ScenarioManager::getScenarioTicks() + 1))
+        if (!Benchmark::isActive() && !Network::shouldProcessTick(ScenarioManager::getScenarioTicks() + 1))
         {
             return;
         }
 
         ScenarioManager::setScenarioTicks(ScenarioManager::getScenarioTicks() + 1);
         ScenarioManager::setScenarioTicks2(ScenarioManager::getScenarioTicks2() + 1);
-        Network::processGameCommands(ScenarioManager::getScenarioTicks());
+        if (!Benchmark::isActive())
+        {
+            Network::processGameCommands(ScenarioManager::getScenarioTicks());
+        }
 
         recordTickStartPrng();
         World::TileManager::defragmentTilePeriodic();
@@ -227,16 +231,17 @@ namespace OpenLoco::Scenes::GameScene
         bool userMadeAnyChanges = Scenario::getOptions().madeAnyChanges;
 
         tickDate();
-        World::TileManager::tick();
-        World::WaveManager::tick();
-        TownManager::tick();
-        IndustryManager::tick();
-        VehicleManager::tick();
-        StationManager::tick();
-        EffectsManager::tick();
-        CompanyManager::tick();
-        World::AnimationManager::tick();
-        Audio::tick();
+        using Benchmark::LogicComponent;
+        Benchmark::measureLogic(LogicComponent::tiles, [] { World::TileManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::waves, [] { World::WaveManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::towns, [] { TownManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::industries, [] { IndustryManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::vehicles, [] { VehicleManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::stations, [] { StationManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::effects, [] { EffectsManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::companies, [] { CompanyManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::animations, [] { World::AnimationManager::tick(); });
+        Benchmark::measureLogic(LogicComponent::audioState, [] { Audio::tick(); });
 
         Scenario::getOptions().madeAnyChanges = userMadeAnyChanges;
 

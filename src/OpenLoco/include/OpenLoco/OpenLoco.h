@@ -20,6 +20,8 @@ namespace OpenLoco
     void* hInstance();
     void resetSubsystems();
     void simulateGame(const fs::path& path, int32_t ticks);
+    int runBenchmarkCase(const std::string& casePath, const std::string& outputPath);
+    int runBenchmarkSelfTests();
     void benchmarkLoadGame(const fs::path& path);
     void benchmarkTickLogic(int32_t ticks);
 

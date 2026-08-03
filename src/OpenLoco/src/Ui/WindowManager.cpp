@@ -1,5 +1,6 @@
 #include "Ui/WindowManager.h"
 #include "Audio/Audio.h"
+#include "Benchmark/Benchmark.h"
 #include "Entities/EntityManager.h"
 #include "GameCommands/GameCommands.h"
 #include "GameState.h"
@@ -1914,7 +1915,14 @@ namespace OpenLoco::Ui::WindowManager
                 continue;
             }
 
-            windowDraw(drawingCtx, &w, rect);
+            if (w.type == WindowType::main)
+            {
+                Benchmark::measureRender(Benchmark::RenderComponent::viewportWorld, [&] { windowDraw(drawingCtx, &w, rect); });
+            }
+            else
+            {
+                Benchmark::measureRender(Benchmark::RenderComponent::uiWindow, [&] { windowDraw(drawingCtx, &w, rect); });
+            }
         }
     }
 }

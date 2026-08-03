@@ -20,6 +20,8 @@ namespace OpenLoco
     void* hInstance();
     void resetSubsystems();
     void simulateGame(const fs::path& path, int32_t ticks);
+    void benchmarkLoadGame(const fs::path& path);
+    void benchmarkTickLogic(int32_t ticks);
 
     void initialise();
     void update();

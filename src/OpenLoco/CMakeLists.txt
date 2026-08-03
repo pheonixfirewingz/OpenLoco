@@ -3,6 +3,8 @@ set(OLOCO_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Audio/Audio.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Audio/Music.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Audio/VehicleAudio.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Benchmark/Benchmark.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Benchmark/Benchmark.Emscripten.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLine.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Config.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Date.cpp"

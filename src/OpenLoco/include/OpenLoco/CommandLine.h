@@ -18,6 +18,8 @@ namespace OpenLoco
         help,
         version,
         intro,
+        benchmark,
+        benchmarkSelfTest,
     };
 
     struct CommandLineOptions

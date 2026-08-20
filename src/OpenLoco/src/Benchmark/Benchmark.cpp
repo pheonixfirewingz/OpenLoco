@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <locale>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -231,6 +232,8 @@ namespace OpenLoco::Benchmark
             auto& engine = Gfx::getDrawingEngine();
             engine.resize(width, height);
             Config::get().showFPS = false;
+            benchmarkLoadGame(std::filesystem::u8path(fixture));
+            uint32_t currentCameraTick = 0;
             for (const auto& camera : root["workload"]["cameras"])
             {
                 const auto cameraId = camera["id"].as<std::string>();
@@ -239,8 +242,12 @@ namespace OpenLoco::Benchmark
                 const auto mapY = camera["y"].as<int32_t>();
                 const auto zoom = camera["zoom"].as<int8_t>();
                 const auto rotation = camera["rotation"].as<int8_t>();
-                benchmarkLoadGame(std::filesystem::u8path(fixture));
-                benchmarkTickLogic(static_cast<int32_t>(cameraTick));
+                if (cameraTick < currentCameraTick)
+                {
+                    throw std::runtime_error("Camera ticks must be ordered");
+                }
+                benchmarkTickLogic(static_cast<int32_t>(cameraTick - currentCameraTick));
+                currentCameraTick = cameraTick;
                 S5::exportGameStateToFile(artifactDir / ("camera-" + cameraId + "-state.sv5"), S5::SaveFlags::none);
                 auto* main = Ui::WindowManager::getMainWindow();
                 if (main == nullptr || main->viewports[0] == nullptr)
@@ -259,6 +266,8 @@ namespace OpenLoco::Benchmark
                     Gfx::invalidateScreen();
                     engine.render();
                 };
+                forceRender();
+                engine.present();
                 setRenderBreakdownEnabled(false);
                 for (uint32_t i = 0; i < renderWarmup; ++i)
                 {
@@ -318,6 +327,7 @@ namespace OpenLoco::Benchmark
             }
 
             std::ofstream out(outputPath, std::ios::binary);
+            out.imbue(std::locale::classic());
             if (!out)
             {
                 throw std::runtime_error("Unable to open benchmark result output");
@@ -354,6 +364,7 @@ namespace OpenLoco::Benchmark
         {
             _active = false;
             std::ofstream out(outputPath, std::ios::binary);
+            out.imbue(std::locale::classic());
             out << "{\"schema\":\"" << kResultSchema << "\",\"error\":" << jsonString(e.what()) << "}\n";
             return 1;
         }

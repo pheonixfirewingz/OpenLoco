@@ -461,6 +461,10 @@ namespace OpenLoco
 
     int runBenchmarkCase(const std::string& casePath, const std::string& outputPath)
     {
+        if (!Ui::isInitialized())
+        {
+            Ui::createWindow(Config::get().display);
+        }
         return Benchmark::runCaseFile(casePath, outputPath);
     }
 
@@ -471,7 +475,7 @@ namespace OpenLoco
 
     void benchmarkLoadGame(const fs::path& savePath)
     {
-        static bool initialised = Ui::isInitialized();
+        static bool initialised = false;
         if (!initialised)
         {
             simulateGame(savePath, 0);

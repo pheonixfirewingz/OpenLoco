@@ -201,7 +201,10 @@ namespace OpenLoco::Scenes::GameScene
                         World::TileManager::updateYearly();
                     }
 
-                    autosaveCheck();
+                    if (!Benchmark::isActive())
+                    {
+                        autosaveCheck();
+                    }
                 }
 
                 CompanyManager::updateDaily();
